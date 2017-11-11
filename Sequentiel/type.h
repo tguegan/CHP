@@ -2,11 +2,12 @@
 #define __TYPE__
 
 #include <stdio.h>
-#include <mat.h>
+#include <stdlib.h>
+#include <math.h>
 
 struct matrice_diag {
-  float **valeur;
-  int *distance;
+  double **valeur;
+  int distance[5];
 };
 
 #endif
