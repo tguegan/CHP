@@ -7,7 +7,8 @@
 
 struct matrice_diag {
   double **valeur;
-  int distance[5];
+  int *distance;
 };
 
 #endif
+
