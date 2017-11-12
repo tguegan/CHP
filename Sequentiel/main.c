@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
   struct matrice_diag A;
   double *x, *b, Lx, Ly, D, Omg[4], Tfinal, dt;
   int Nx, Ny, Nb_diag = 5, i, j, Num_prob,  Nt;
-  char *Name;
+  char Name[50];
 
   printf("Entrez Nx :\n");
   scanf("%d",&Nx);
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     {
     case 1:
     case 2:
-      Name = "solution.plt";
+      sprintf(Name, "solution.plt");
       init_mat(A, Nx, Ny, D, Omg);
       vectb(b, Nx, Ny, Omg, Num_prob, 0);
       grad_conju(A, x, b, Nx, Ny, Nb_diag);
