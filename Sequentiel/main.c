@@ -7,21 +7,20 @@ int main(int argc, char *argv[])
   double *x, *b, Lx, Ly, D, Omg[4], Tfinal, dt;
   int Nx, Ny, Nb_diag = 5, i, j, Num_prob,  Nt;
   char Name[50];
+  FILE * file;
+ 
+  file = fopen("input.txt", "r");
+  fgets(Name, 50, file); //on saute une ligne
 
-  printf("Entrez Nx :\n");
-  scanf("%d",&Nx);
+  fscanf(file, "%d", &Nx);  
 
-  printf("Entrez Ny :\n");
-  scanf("%d",&Ny);
+  fscanf(file, "%d", &Ny);
 
-  printf("Entrez Lx :\n");
-  scanf("%lf",&Lx);
+  fscanf(file, "%lf", &Lx);
 
-  printf("Entrez Ly :\n");
-  scanf("%lf",&Ly);
-
-  printf("Entrez D :\n");
-  scanf("%lf",&D);
+  fscanf(file, "%lf", &Ly);
+  
+  fscanf(file, "%lf", &D);
 
   printf("\nQuel probleme voulez-vous resoudre ? :\n");
   printf("1) f = 2*(x^2 - x + y^2 - y) // g = h = 0\n");
@@ -31,11 +30,11 @@ int main(int argc, char *argv[])
 
   if (Num_prob == 3)
     {
-      printf("\nEntrez le temps final :\n");
-      scanf("%lf", &Tfinal);
-      printf("Entrez Nt\n");
-      scanf("%d", &Nt);
+      fscanf(file, "%lf", &Tfinal);
+      fscanf(file, "%d", &Nt);
     }
+
+  fclose(file);
 
   Omg[0] = 0.0;
   Omg[1] = Lx;
@@ -49,7 +48,7 @@ int main(int argc, char *argv[])
   A.distance = (int*) calloc(Nb_diag, sizeof(int));
   A.valeur = (double**) calloc(Nx * Ny, sizeof(double*));
   for (i = 0; i < Nx * Ny; i++)
-    A.valeur[i] = (double*) calloc(Nx * Ny, sizeof(double));
+    A.valeur[i] = (double*) calloc(Nb_diag, sizeof(double));
 
   switch (Num_prob)
     {
