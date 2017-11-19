@@ -1,4 +1,4 @@
 all: clean
-	gcc main.c init.c solver.c -o main -lm -Wall -O2
+	gcc main.c init.c solver.c -o main -lm
 clean:
 	rm -rf *~ main *# *.plt

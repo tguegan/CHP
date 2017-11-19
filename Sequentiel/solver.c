@@ -2,7 +2,7 @@
 
 void prod_mat_vect(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb_diag)
 {
-  int i, k, l;
+  int i, k, l, cpt = 0;
 
   for (i = 0; i < Nx * Ny; i++)
     {
@@ -12,6 +12,7 @@ void prod_mat_vect(struct matrice_diag A, double *x, double *b, int Nx, int Ny, 
 	  l = i + A.distance[k];
 	  if ((l < Nx * Ny) && (l >= 0))
 	    b[i] = b[i] + A.valeur[i][k] * x[l];
+	  cpt++;
 	}
     }
 }
@@ -34,14 +35,13 @@ double norme_vect(double *x, int Nx, int Ny)
 
 void grad_conju(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb_diag)
 {
-  double *r, *rk, *Ap, *p, alp, beta, tmpa, tmpb, epsi, normer = 1, normeb;
+  double *r, *Ap, *p, alp, beta, tmpa, tmpb, epsi, normer = 1, normeb;
   int i, N, cpt = 0;
 
   N = Nx * Ny;
   epsi = 1e-8;
 
   r = (double*) calloc(N, sizeof(double));
-  rk = (double*) calloc(N, sizeof(double));
   p = (double*) calloc(N, sizeof(double));
   Ap = (double*) calloc(N, sizeof(double));
 
@@ -54,7 +54,7 @@ void grad_conju(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int
 
   normeb = norme_vect(b, Nx, Ny);
   
-  while ((normer > epsi) && (cpt < 2000))
+  while ((normer > epsi) && (cpt < 20000))
     {
       prod_mat_vect(A, p, Ap, Nx, Ny, Nb_diag);
 
@@ -66,16 +66,16 @@ void grad_conju(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int
       for (i = 0; i < N; i++)
 	{
 	  x[i] += alp * p[i];
-	  rk[i] = r[i] - alp * Ap[i];
+	  Ap[i] = r[i] - alp * Ap[i];
 	}
-      tmpb = prod_scal(rk, rk, Nx, Ny);
+      tmpb = prod_scal(Ap, Ap, Nx, Ny);
 
       beta = tmpb / tmpa;
 
       for (i = 0; i < N; i++)
 	{
-	p[i] = rk[i] + beta * p[i];
-	r[i] = rk[i];
+	p[i] = Ap[i] + beta * p[i];
+	r[i] = Ap[i];
 	}
       
       normer = sqrt(tmpb) / normeb;
@@ -85,7 +85,6 @@ void grad_conju(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int
   printf("Nombre d'iteration : %d\n", cpt);
 
   free(r);
-  free(rk);
   free(p);
   free(Ap);
 }
