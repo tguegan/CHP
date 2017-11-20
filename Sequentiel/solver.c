@@ -132,13 +132,11 @@ void ecriture_visit(double *x, int Nx, int Ny, double *Omg, char *Name)
   
   fprintf(OutFile,"TITLE = \"PROBLEME SOLUTION\" \n");
   fprintf(OutFile,"VARIABLES = \"X\", \"Y\", \"U\" \n");
-  fprintf(OutFile,"ZONE T=\"SQUARE\", I=%d, J=%d, F=POINT \n", Nx, Ny);
+  fprintf(OutFile,"ZONE T=\"SQUARE\", I=%d, J=%d, F=POINT \n", Ny, Nx);
 
   for (i = 0; i < Nx; i++)
-    {
       for (j = 0; j < Ny; j++)
 	fprintf(OutFile,"%lf %lf %lf\n", (i + 1) * dx, (j + 1) * dy, x[i + j * Nx]);
-    }
 
   fclose(OutFile);
 }

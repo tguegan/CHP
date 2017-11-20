@@ -5,8 +5,8 @@
 int main(int argc, char *argv[])
 {
     struct matrice_diag A;
-    double Omg[4], Lx, Ly, D, *b, *x, *x_etendu, *x_p, *x_s, *r, *p, *Ap, Tfinal;
-    int ProcId, ProcNo, i1, iN, Nx, Ny, Nb_diag = 5, i, Num_prob, Nt;
+    double Omg[4], Lx, Ly, D, *b, *x, *x_etendu, *x_p, *x_s, *r, *p, *Ap, Tfinal, max, dt;
+    int ProcId, ProcNo, i1, iN, N, Nx, Ny, Nb_diag = 5, i, j, Num_prob, Nt;
     unsigned long duration;
     char Name[50];
     FILE *file;
@@ -72,18 +72,19 @@ int main(int argc, char *argv[])
       printf("\nInitialisation et calcul de la solution en cours...\n");
 
     charge(&i1, &iN, Nx * Ny, ProcId, ProcNo);
+    N = iN - i1 + 1;
 
-    x = (double*) calloc(iN - i1 + 1, sizeof(double));
-    b = (double*) calloc(iN - i1 + 1, sizeof(double));
-    x_etendu = (double*) calloc(iN - i1 + 1 + 2 * Nx, sizeof(double));
+    x = (double*) calloc(N, sizeof(double));
+    b = (double*) calloc(N, sizeof(double));
+    x_etendu = (double*) calloc(N + 2 * Nx, sizeof(double));
     x_p = (double*) calloc(Nx, sizeof(double));
     x_s = (double*) calloc(Nx, sizeof(double));
-    r = (double*) calloc(iN - i1 + 1, sizeof(double));
-    p = (double*) calloc(iN - i1 + 1, sizeof(double));
-    Ap = (double*) calloc(iN - i1 + 1, sizeof(double));
+    r = (double*) calloc(N, sizeof(double));
+    p = (double*) calloc(N, sizeof(double));
+    Ap = (double*) calloc(N, sizeof(double));
     A.distance = (int*) calloc(Nb_diag, sizeof(int));
-    A.valeur = (double**) calloc(iN - i1 + 1, sizeof(double*));
-    for (i = 0; i < iN - i1 + 1; i++)
+    A.valeur = (double**) calloc(N, sizeof(double*));
+    for (i = 0; i < N; i++)
       A.valeur[i] = (double*) calloc(Nb_diag, sizeof(double));
 
     switch (Num_prob)
@@ -93,16 +94,36 @@ int main(int argc, char *argv[])
 	init_mat(A, Nx, Ny, D, Omg, i1, iN);
 	vectb(b, Nx, Ny, Omg, Num_prob, 0, i1, iN);
 	grad_conju(A, x, b, Nx, Ny, Nb_diag, i1, iN, ProcId, ProcNo, x_etendu, x_p, x_s, r, p, Ap);
+	max = erreur_max(x, Nx, Ny, Omg, Num_prob, i1, iN);
 	if (ProcId == 0)
-	  printf("Erreur max : %.10lf\n", erreur_max(x, Nx, Ny, Omg, Num_prob, i1, iN));
+	  printf("Erreur max : %.10lf\n", max);
+	break;
+      case 3:
+	dt = Tfinal / Nt;
+	init_mat(A, Nx, Ny, D, Omg, i1, iN);
+	for (i = 0; i < N; i++)
+	  {
+	    for (j = 0; j < Nb_diag; j++)
+	      A.valeur[i][j] *= dt;
+	    A.valeur[i][2] += 1;
+	  }
+	for (i = 0; i < Nt; i++)
+	  {
+	    vectb(b, Nx, Ny, Omg, Num_prob, i * dt, i1, iN);
+	    for (j = 0; j < N; j++)
+	      b[j] = x[j] + dt * b[j];
+	    grad_conju(A, x, b, Nx, Ny, Nb_diag, i1, iN, ProcId, ProcNo, x_etendu, x_p, x_s, r, p, Ap);
+	  }
 	break;
       default:
 	if (ProcId == 0)
 	  printf("Erreur lors du choix du probleme.\n");
       }
+
+    ecriture_visit(x, Nx, Ny, Omg, "test.plt", ProcId, ProcNo, i1, iN);
     
     clock_t end = clock();
-    duration = (end - start ) * 1000 / CLOCKS_PER_SEC;
+    duration = (end - start) * 1000 / CLOCKS_PER_SEC;
     MPI_Allreduce(&duration, &duration, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
     if (ProcId == 0)
       printf("\nTemps de resolution : %ld ms\n", duration);
@@ -116,7 +137,7 @@ int main(int argc, char *argv[])
     free(Ap);
     free(b);
     free(A.distance);
-    for (i = 0; i < iN - i1 + 1; i++)
+    for (i = 0; i < N; i++)
         free(A.valeur[i]);
     free(A.valeur);
 
