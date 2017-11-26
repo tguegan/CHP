@@ -1,4 +1,3 @@
-#define PI 4 * atan(1.0)
 #include "init.h"
 
 void init_mat(struct matrice_diag A ,int Nx ,int Ny ,double D ,double *Omg, int i1, int iN)
@@ -41,8 +40,6 @@ void init_mat(struct matrice_diag A ,int Nx ,int Ny ,double D ,double *Omg, int 
 
   for (i = Nx; i < N - Nx + 1; i+=Nx)
     A.valeur[i][1] = 0; /*Correspondant aux intersections des blocs de matrices*/
-
-
 }
 
 double f(double x, double y, double t, double *Omg, int Num_prob)
@@ -89,7 +86,7 @@ double h(double x, double y, int Num_prob)
     }
 }
 
-void vectb(double *b, int Nx, int Ny, double *Omg, int Num_prob, double T, int i1, int iN)
+void vectb(double *b, int Nx, int Ny, double *Omg, int Num_prob, double T, int i1, int iN, int ProcId, int ProcNo)
 {
   double dx, dy;
   int i, j;
@@ -100,32 +97,38 @@ void vectb(double *b, int Nx, int Ny, double *Omg, int Num_prob, double T, int i
   for (i = 0; i < Nx; i++)
     {
       for (j = 0; j < iN - i1 + 1; j++)
-	b[i + j * Nx] = f((i + 1) * dx, (j + 1) * dy , T , Omg, Num_prob); /*Valeur intérieure du domaine */
+	b[i + j * Nx] = f((i + 1) * dx, (j + i1+ 1) * dy , T , Omg, Num_prob); /*Valeur intérieure du domaine */
     }
 
-  for (i = 0; i < Nx; i++)
-    {
-      b[i + (Ny - 1) * Nx] += g((i + 1) * dx, Omg[3], Num_prob) / (dy * dy); /* Valeur sur le bord Gamma 0 */
+  if (ProcId == 0)
+    for (i = 0; i < Nx; i++)
       b[i] += g((i + 1) * dx, Omg[2], Num_prob) / (dy * dy);
-    }
+  else if (ProcId == ProcNo - 1)
+    for (i = 0; i < Nx; i++)
+      b[i + (iN - i1) * Nx] += g((i + 1) * dx, Omg[3], Num_prob) / (dy * dy);
   
-  for(i = 0; i < iN - i1 + 1; i++)
+  for (i = 0; i < iN - i1 + 1; i++)
     {
-      b[i * Nx] += h(Omg[0], (i + 1) * dy, Num_prob) / (dx * dx); /*Valeur sur le bord Gamma 1 */
-      b[Nx - 1 + i * Nx] += h(Omg[1], (i + 1) * dy, Num_prob) / (dx * dx);
+      b[i * Nx] += h(Omg[0], (i + i1 + 1) * dy, Num_prob) / (dx * dx); /*Valeur sur le bord Gamma 1 */
+      b[Nx - 1 + i * Nx] += h(Omg[1], (i + i1 + 1) * dy, Num_prob) / (dx * dx);
     } 
 }
 
-void charge(int *i1, int *iN, int N, int ProcId, int ProcNo)
+void charge(int *i1, int *iN, int N, int ProcId, int ProcNo,int ri,int rs)
 {
-  if (ProcId < ProcNo - 1)
+  if (ProcId >0 && ProcId < ProcNo - 1)
     {
-      *i1 = round(ProcId * ((double) N) / ProcNo);
-      *iN = round((ProcId + 1) * ((double) N) / ProcNo) - 1;
+      *i1 = round(ProcId * ((double) N) / ProcNo ) - ri;
+      *iN = round((ProcId + 1) * (((double) N) / ProcNo)) - 1 + rs;
+    }
+  else if (ProcId == 0)
+    {
+      *i1 = round(ProcId * ((double) N) / ProcNo );
+      *iN = round((ProcId + 1) * (((double) N) / ProcNo)) - 1 + rs;
     }
   else
     {
-      *i1 = round(ProcId * ((double) N) / ProcNo);
+      *i1 = round(ProcId * ((double) N) / ProcNo) - ri ;
       *iN = N - 1;
     }
 }

@@ -91,12 +91,14 @@ int main(int argc, char *argv[])
       {
       case 1:
       case 2:
+	sprintf(Name, "solution.plt");
 	init_mat(A, Nx, Ny, D, Omg, i1, iN);
 	vectb(b, Nx, Ny, Omg, Num_prob, 0, i1, iN);
 	grad_conju(A, x, b, Nx, Ny, Nb_diag, i1, iN, ProcId, ProcNo, x_etendu, x_p, x_s, r, p, Ap);
 	max = erreur_max(x, Nx, Ny, Omg, Num_prob, i1, iN);
 	if (ProcId == 0)
 	  printf("Erreur max : %.10lf\n", max);
+	ecriture_visit(x, Nx, Ny, Omg, Name, ProcId, ProcNo, i1, iN);
 	break;
       case 3:
 	dt = Tfinal / Nt;
@@ -109,18 +111,18 @@ int main(int argc, char *argv[])
 	  }
 	for (i = 0; i < Nt; i++)
 	  {
+	    sprintf(Name, "solution_%d.plt", i);
 	    vectb(b, Nx, Ny, Omg, Num_prob, i * dt, i1, iN);
 	    for (j = 0; j < N; j++)
 	      b[j] = x[j] + dt * b[j];
 	    grad_conju(A, x, b, Nx, Ny, Nb_diag, i1, iN, ProcId, ProcNo, x_etendu, x_p, x_s, r, p, Ap);
+	    ecriture_visit(x, Nx, Ny, Omg, Name, ProcId, ProcNo, i1, iN);
 	  }
 	break;
       default:
 	if (ProcId == 0)
 	  printf("Erreur lors du choix du probleme.\n");
       }
-
-    ecriture_visit(x, Nx, Ny, Omg, "test.plt", ProcId, ProcNo, i1, iN);
     
     clock_t end = clock();
     duration = (end - start) * 1000 / CLOCKS_PER_SEC;

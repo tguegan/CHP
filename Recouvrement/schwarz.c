@@ -1,9 +1,9 @@
 #include "schwarz.h"
 #include "solver.h"
 
-void schwarz(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb_diag, int i1, int iN, int ProcId, int ProcNo, double *Omg)
+void schwarz(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb_diag, int i1, int iN, int ProcId, int ProcNo, double *Omg, int ri, int rs, double dt)
 {
-  int i, N, k, cpt = 0;
+  int i, N, cpt = 0;
   double eps, normex = 0, normexn = 0, *x_s, *x_p, *xcom, *btmp, dy;
   MPI_Status Status;
 
@@ -14,6 +14,7 @@ void schwarz(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb
   x_p = (double*) calloc(Nx, sizeof(double));
   xcom = (double*) calloc(N, sizeof(double));
   btmp = (double*) calloc(N, sizeof(double));
+  
   grad_conju(A, x, b, Nx, iN - i1 + 1, Nb_diag);
   
   normex = norme_vect(x, Nx, iN - i1 + 1);
@@ -24,8 +25,8 @@ void schwarz(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb
       normex = normexn;
       for (i = 0; i < Nx; i++)
 	{
-	  x_s[i] = x[N - Nx + i];
-	  x_p[i] = x[i];
+	  x_s[i] = x[i + (iN - i1 - rs - ri) * Nx];
+	  x_p[i] = x[i + (rs + ri) * Nx];
 	}
       
       if (ProcId == 0)
@@ -43,7 +44,7 @@ void schwarz(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb
 	  xcom[N - Nx + i] = x_p[i];
 
       for (i = 0; i < N; i++)
-	btmp[i] = b[i] + xcom[i]/(dy * dy);
+	btmp[i] = b[i] + dt * xcom[i]/(dy * dy);
 
       grad_conju(A, x, btmp, Nx, iN - i1 + 1, Nb_diag);
       normexn = prod_scal(x, x, Nx, iN - i1 + 1);
@@ -51,7 +52,7 @@ void schwarz(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb
       normexn = sqrt(normexn);
 
       if (ProcId == 0)
-	printf("\nCompteur de Schwarz : %d\n", cpt);
+	printf("\nCompteur de Schwarz : %d,  Résidu  : %.10lf\n", cpt, fabs(normex - normexn));
     }
 
   free(btmp);

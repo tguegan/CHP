@@ -1,4 +1,5 @@
 #include "solver.h"
+#include "init.h"
 
 void prod_mat_vect(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int Nb_diag)
 {
@@ -87,7 +88,45 @@ void grad_conju(struct matrice_diag A, double *x, double *b, int Nx, int Ny, int
   free(Ap);
 }
 
-double erreur_max(double *x, int Nx, int Ny, double *Omg, int Num_prob)
+void ecriture_visit(double *x, int Nx, int Ny, double *Omg, char *Name, int ProcId, int ProcNo, int i1, int iN, int rb)
+{
+  FILE *OutFile;
+  double dx, dy;
+  int i, k, m, n;
+
+  dx = (Omg[1] - Omg[0]) / (Nx + 1.0);
+  dy = (Omg[3] - Omg[2]) / (Ny + 1.0);
+
+  for (k = 0; k < ProcNo; k++)
+    {
+      if (ProcId == k && k == 0)
+	{
+	  OutFile = fopen(Name, "w");
+	  fprintf(OutFile,"TITLE = \"PROBLEME SOLUTION\" \n");
+	  fprintf(OutFile,"VARIABLES = \"X\", \"Y\", \"U\", \"Dom\"\n");
+	  fprintf(OutFile,"ZONE T=\"SQUARE\", I=%d, J=%d, F=POINT \n", Nx, Ny);
+	  for (i = i1; i < iN + 1; i++)
+	    {
+	      comptage(i, Nx, &m, &n);
+	      fprintf(OutFile,"%lf %lf %lf %d\n", (m + 1) * dx, (n + 1) * dy, x[i - i1], k);
+	    }
+	  fclose(OutFile);
+	}
+      else if (ProcId == k)
+	{
+	  OutFile = fopen(Name, "a");
+	  for (i = i1; i < iN + 1; i++)
+	    {
+	      comptage(i, Nx, &m, &n);
+	      fprintf(OutFile,"%lf %lf %lf %d\n", (m + 1) * dx, (n + 1) * dy, x[i + rb*Nx - i1], k);
+	    }
+	  fclose(OutFile);
+	}
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+}
+
+double erreur_max(double *x, int Nx, int Ny, double *Omg, int Num_prob , int i1 , int iN) 
 {
   double tmp, max = 0, dx, dy;
   int i, j;
@@ -97,44 +136,24 @@ double erreur_max(double *x, int Nx, int Ny, double *Omg, int Num_prob)
   
   for (i = 0; i < Nx; i++)
     {
-      for (j = 0; j < Ny; j++)
+      for (j = 0; j < iN - i1 + 1; j++)
 	{
 	  switch (Num_prob)
 	    {
 	    case 1:
-	      tmp = fabs(x[i + j * Nx] - (- (i +1) * dx * (j + 1) * dy * (Omg[1] - (i + 1) * dx) * (Omg[3] - (j + 1) * dy)));
+	      tmp = fabs(x[i + j * Nx] - (- (i +1) * dx * (j + i1 + 1) * dy * (Omg[1] - (i + 1) * dx) * (Omg[3] - (j + i1 + 1) * dy)));
 	      if (tmp > max)
 		max = tmp;
 	      break;
 	    case 2:
-	      tmp = fabs(x[i + j * Nx] - (sin((i + 1) * dx) + cos((j + 1) * dy)));
+	      tmp = fabs(x[i + j * Nx] - (sin((i + 1) * dx) + cos((j + i1 + 1) * dy)));
 	      if (tmp > max)
 		max = tmp;
 	      break;
 	    }
 	}
     }
+
+  MPI_Allreduce(&max, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   return max;
-}
-
-void ecriture_visit(double *x, int Nx, int Ny, double *Omg, char *Name)
-{
-  FILE *OutFile;
-  double dx, dy;
-  int i, j;
-
-  dx = (Omg[1] - Omg[0]) / (Nx + 1.0);
-  dy = (Omg[3] - Omg[2]) / (Ny + 1.0);
-
-  OutFile = fopen(Name, "w");
-  
-  fprintf(OutFile,"TITLE = \"PROBLEME SOLUTION\" \n");
-  fprintf(OutFile,"VARIABLES = \"X\", \"Y\", \"U\" \n");
-  fprintf(OutFile,"ZONE T=\"SQUARE\", I=%d, J=%d, F=POINT \n", Ny, Nx);
-
-  for (i = 0; i < Nx; i++)
-      for (j = 0; j < Ny; j++)
-	fprintf(OutFile,"%lf %lf %lf\n", (i + 1) * dx, (j + 1) * dy, x[i + j * Nx]);
-
-  fclose(OutFile);
 }

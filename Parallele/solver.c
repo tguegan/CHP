@@ -146,14 +146,14 @@ void ecriture_visit(double *x, int Nx, int Ny, double *Omg, char *Name, int Proc
     {
       if (ProcId == k && k == 0)
 	{
-	  OutFile = fopen(Name, "a");
+	  OutFile = fopen(Name, "w");
 	  fprintf(OutFile,"TITLE = \"PROBLEME SOLUTION\" \n");
-	  fprintf(OutFile,"VARIABLES = \"X\", \"Y\", \"U\" \n");
-	  fprintf(OutFile,"ZONE T=\"SQUARE\", I=%d, J=%d, F=POINT \n", Ny, Nx);
+	  fprintf(OutFile,"VARIABLES = \"X\", \"Y\", \"U\", \"Dom\"\n");
+	  fprintf(OutFile,"ZONE T=\"SQUARE\", I=%d, J=%d, F=POINT \n", Nx, Ny);
 	  for (i = i1; i < iN + 1; i++)
 	    {
 	      comptage(i, Nx, &m, &n);
-	      fprintf(OutFile,"%lf %lf %lf\n", (n + 1) * dx, (m + 1) * dy, x[i - i1]);
+	      fprintf(OutFile,"%lf %lf %lf %d\n", (m + 1) * dx, (n + 1) * dy, x[i - i1], k);
 	    }
 	  fclose(OutFile);
 	}
@@ -163,7 +163,7 @@ void ecriture_visit(double *x, int Nx, int Ny, double *Omg, char *Name, int Proc
 	  for (i = i1; i < iN + 1; i++)
 	    {
 	      comptage(i, Nx, &m, &n);
-	      fprintf(OutFile,"%lf %lf %lf\n", (n + 1) * dx, (m + 1) * dy, x[i - i1]);
+	      fprintf(OutFile,"%lf %lf %lf %d\n", (m + 1) * dx, (n + 1) * dy, x[i - i1], k);
 	    }
 	  fclose(OutFile);
 	}
