@@ -1,0 +1,2 @@
+Nx Ny Lx Ly D Tfinal Nt
+200 200 1 1 1 5 50
